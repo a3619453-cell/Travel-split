@@ -44,10 +44,12 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
       background: var(--bg);
       touch-action: manipulation;
+      -webkit-text-size-adjust: 100%;
     }
+    body.modal-open { overflow: hidden; }
 
     button, input, textarea, select { font: inherit; }
-    button { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
 
     .view {
       display: none;
@@ -377,6 +379,30 @@
       box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
     }
     .bottom-action .btn { width: 100%; }
+    #view-detail .bottom-action {
+      pointer-events: none;
+      background: transparent;
+      border-top: 0;
+      box-shadow: none;
+    }
+    .fab {
+      pointer-events: auto;
+      position: fixed;
+      right: max(18px, calc((100vw - 760px) / 2 + 18px));
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 0;
+      background: #e8792f;
+      color: #fff;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 700;
+      box-shadow: 0 14px 34px rgba(232, 121, 47, .32);
+      cursor: pointer;
+    }
+    .fab:active { transform: translateY(1px) scale(.98); }
 
     .modal {
       position: fixed;
@@ -439,6 +465,133 @@
       background: var(--paper);
     }
     .check-item input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+    .expense-flow .sheet {
+      max-height: 100vh;
+      min-height: 82vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .expense-step { display: none; flex: 1; }
+    .expense-step.active {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .calc-display {
+      min-height: 86px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      font-size: clamp(34px, 10vw, 48px);
+      font-weight: 850;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .calc-key {
+      min-height: 56px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .calc-key.op { background: #E4E4E0; }
+    .calc-key.primary { background: #111; color: #fff; }
+    .calc-key.wide { grid-column: span 2; }
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .choice-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      min-height: 54px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      text-align: left;
+    }
+    .choice-card.active {
+      border-color: #e8792f;
+      background: #fff3e9;
+      box-shadow: inset 0 0 0 1px #e8792f;
+    }
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--cloud);
+    }
+    .mode-switch button {
+      min-height: 42px;
+      border: 0;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--muted);
+      font-weight: 850;
+    }
+    .mode-switch button.active {
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .share-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    .share-row button {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #F8F8F6;
+      min-width: 112px;
+      min-height: 44px;
+      font-weight: 850;
+      color: var(--ink);
+    }
+    .share-row.active button {
+      border-color: #e8792f;
+      background: #fff3e9;
+    }
+    .flow-actions {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding-top: 6px;
+    }
+    .flow-note {
+      margin: -4px 2px 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
 
     .hidden { display: none !important; }
   </style>
@@ -509,7 +662,7 @@
     </div>
 
     <div class="bottom-action">
-      <button class="btn" onclick="openExpenseModal()">新增</button>
+      <button class="fab" onclick="openExpenseModal()" aria-label="新增支出">+</button>
     </div>
   </div>
 
@@ -540,39 +693,50 @@
           <option value="A$">AUD 澳幣</option>
         </select>
       </div>
-      <button class="btn" style="width:100%;" onclick="saveGroup()">完成</button>
+      <button id="btn-save-group" type="button" class="btn" style="width:100%;" onclick="saveGroup()">完成</button>
     </div>
   </div>
 
-  <div class="modal" id="modal-expense">
+  <div class="modal expense-flow" id="modal-expense">
     <div class="sheet">
       <div class="sheet-head">
-        <h2>新增</h2>
-        <button class="icon-btn" onclick="closeModal('modal-expense')">
+        <h2 id="expense-modal-title">新增</h2>
+        <button class="icon-btn" onclick="cancelExpenseFlow()">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <div class="field">
-        <label for="expense-title">項目</label>
-        <input id="expense-title" class="control" placeholder="例如：晚餐、車票、住宿">
+      <div id="expense-step-amount" class="expense-step active">
+        <div class="calc-display" id="calc-display">0</div>
+        <div class="calc-grid" id="main-calc"></div>
+        <div>
+          <p class="section-title" style="margin: 4px 2px 10px;">誰出錢</p>
+          <div class="choice-grid" id="payer-choices"></div>
+        </div>
+        <div class="flow-actions">
+          <button id="btn-expense-next" class="btn" onclick="goExpenseStep2()" disabled>下一步</button>
+        </div>
       </div>
-      <div class="field">
-        <label for="expense-amount">金額</label>
-        <input id="expense-amount" class="control" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+
+      <div id="expense-step-split" class="expense-step">
+        <div class="mode-switch">
+          <button id="btn-mode-equal" class="active" onclick="setSplitMode('equal')">為誰付錢</button>
+          <button id="btn-mode-custom" onclick="setSplitMode('custom')">項目分錢</button>
+        </div>
+        <div>
+          <p class="section-title" style="margin: 4px 2px 10px;">分給誰</p>
+          <div class="choice-grid" id="split-choices"></div>
+        </div>
+        <div id="custom-split-panel" class="hidden">
+          <p class="flow-note" id="custom-remaining">剩餘 0</p>
+          <div class="check-grid" id="share-list"></div>
+          <div class="calc-display" id="share-calc-display">0</div>
+          <div class="calc-grid" id="share-calc"></div>
+        </div>
+        <div class="flow-actions">
+          <button id="btn-save-expense" class="btn" onclick="saveExpense()" disabled>完成</button>
+          <button class="btn secondary" onclick="goExpenseStep1()">上一步</button>
+        </div>
       </div>
-      <div class="field">
-        <label for="expense-paid-by">付款人</label>
-        <select id="expense-paid-by" class="control"></select>
-      </div>
-      <div class="field">
-        <label>分攤</label>
-        <div id="split-checks" class="check-grid"></div>
-      </div>
-      <div class="field">
-        <label for="expense-note">備註</label>
-        <textarea id="expense-note" class="control" placeholder="選填"></textarea>
-      </div>
-      <button class="btn" style="width:100%;" onclick="saveExpense()">完成</button>
     </div>
   </div>
 
@@ -583,6 +747,9 @@
     let currentGroup = null;
     let groupUnsubscribe = null;
     let activeTab = 'expenses';
+    let expenseDraft = null;
+    let calcTarget = 'total';
+    let lastTouchEnd = 0;
 
     const firebaseConfig = {
       apiKey: "AIzaSyDb8pnjqIZEOwIqAvYp4okzE9z7czZMR9o",
@@ -678,10 +845,16 @@
         if (!amount || !balances[expense.paidBy] || splitWith.length === 0) return;
 
         balances[expense.paidBy].paid += amount;
-        const share = amount / splitWith.length;
-        splitWith.forEach(uid => {
-          balances[uid].share += share;
-        });
+        if (expense.shares && typeof expense.shares === 'object') {
+          splitWith.forEach(uid => {
+            balances[uid].share += Number(expense.shares[uid] || 0);
+          });
+        } else {
+          const share = amount / splitWith.length;
+          splitWith.forEach(uid => {
+            balances[uid].share += share;
+          });
+        }
       });
 
       Object.values(balances).forEach(balance => {
@@ -764,6 +937,9 @@
             currentGroup = groups.find(group => group.id === currentGroupId) || null;
             if (currentGroup) renderDetail();
           }
+        }, err => {
+          console.error(err);
+          alert(firestoreErrorMessage(err));
         });
     }
 
@@ -877,7 +1053,7 @@
       container.innerHTML = expenses.map((expense, index) => {
         const splitNames = (expense.splitWith || []).map(uid => memberName(uid)).join('、');
         return `
-          <div class="expense-card" style="animation-delay:${index * 0.035}s">
+          <div class="expense-card" style="animation-delay:${index * 0.035}s" onclick="editExpense(${jsArg(expense.id)})">
             <div>
               <h3>${escapeHTML(expense.title || '未命名支出')}</h3>
               <p>${escapeHTML(memberName(expense.paidBy))} 先付 · 分給 ${escapeHTML(splitNames || '無人')}</p>
@@ -885,7 +1061,7 @@
             </div>
             <div>
               <div class="expense-amount">${money(expense.amount)}</div>
-              <button class="delete-mini" onclick="deleteExpense(${jsArg(expense.id)})" title="刪除">${icons.trash}</button>
+              <button class="delete-mini" onclick="event.stopPropagation(); deleteExpense(${jsArg(expense.id)})" title="刪除">${icons.trash}</button>
             </div>
           </div>`;
       }).join('');
@@ -920,86 +1096,323 @@
 
     function openModal(id) {
       document.getElementById(id).classList.add('active');
+      document.body.classList.add('modal-open');
     }
 
     function closeModal(id) {
       document.getElementById(id).classList.remove('active');
+      if (!document.querySelector('.modal.active')) document.body.classList.remove('modal-open');
+    }
+
+    function firestoreErrorMessage(err) {
+      if (err?.code === 'permission-denied') {
+        return '儲存失敗：Firestore 規則還沒允許 splitGroups。';
+      }
+      return `儲存失敗：${err?.message || '請稍後再試'}`;
     }
 
     async function saveGroup() {
       if (!currentUser) return alert('請先登入');
+      const btn = document.getElementById('btn-save-group');
       const title = document.getElementById('group-title').value.trim();
       const currency = document.getElementById('group-currency').value.trim() || 'NT$';
       if (!title) return alert('請輸入群組名稱');
 
       const id = `sg_${Date.now()}`;
-      await db.collection('splitGroups').doc(id).set({
-        title,
-        currency,
-        members: [currentUser.uid],
-        memberProfiles: { [currentUser.uid]: userProfile(currentUser) },
-        expenses: {},
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '建立中';
+        }
 
-      document.getElementById('group-title').value = '';
-      document.getElementById('group-currency').value = 'NT$';
-      closeModal('modal-group');
-      currentGroupId = id;
-      currentGroup = {
-        id,
-        title,
-        currency,
-        members: [currentUser.uid],
-        memberProfiles: { [currentUser.uid]: userProfile(currentUser) },
-        expenses: {}
-      };
-      document.getElementById('view-list').classList.remove('active');
-      document.getElementById('view-detail').classList.add('active');
-      renderDetail();
+        await db.collection('splitGroups').doc(id).set({
+          title,
+          currency,
+          members: [currentUser.uid],
+          memberProfiles: { [currentUser.uid]: userProfile(currentUser) },
+          expenses: {},
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('group-title').value = '';
+        document.getElementById('group-currency').value = 'NT$';
+        closeModal('modal-group');
+        currentGroupId = id;
+        currentGroup = {
+          id,
+          title,
+          currency,
+          members: [currentUser.uid],
+          memberProfiles: { [currentUser.uid]: userProfile(currentUser) },
+          expenses: {}
+        };
+        document.getElementById('view-list').classList.remove('active');
+        document.getElementById('view-detail').classList.add('active');
+        renderDetail();
+      } catch (err) {
+        console.error(err);
+        alert(firestoreErrorMessage(err));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '完成';
+        }
+      }
     }
 
-    function openExpenseModal() {
+    function openExpenseModal(expense = null) {
       if (!currentGroup) return;
       const members = getMembers();
-      const payer = document.getElementById('expense-paid-by');
-      payer.innerHTML = members.map(member => `<option value="${escapeAttr(member.uid)}">${escapeHTML(member.name)}</option>`).join('');
-      payer.value = currentUser.uid;
+      const amount = Number(expense?.amount || 0);
+      const selected = expense?.splitWith?.length ? expense.splitWith.filter(uid => members.some(m => m.uid === uid)) : members.map(member => member.uid);
 
-      document.getElementById('split-checks').innerHTML = members.map(member => `
-        <label class="check-item">
-          <span>${avatarHtml(member)} ${escapeHTML(member.name)}</span>
-          <input type="checkbox" value="${escapeAttr(member.uid)}" checked>
-        </label>
+      expenseDraft = {
+        id: expense?.id || null,
+        title: expense?.title || '支出',
+        amountText: amount ? formatCalcNumber(amount) : '',
+        expression: amount ? formatCalcNumber(amount) : '',
+        amount,
+        paidBy: expense?.paidBy || currentUser.uid,
+        splitMode: expense?.shares ? 'custom' : 'equal',
+        splitWith: selected,
+        shares: expense?.shares ? { ...expense.shares } : {},
+        activeShareUid: selected[0] || members[0]?.uid || '',
+        createdAt: expense?.createdAt || Date.now(),
+        note: expense?.note || ''
+      };
+
+      calcTarget = 'total';
+      document.getElementById('expense-modal-title').innerText = expense ? '修改' : '新增';
+      renderCalculator('main-calc', 'total');
+      renderCalculator('share-calc', 'share');
+      renderExpenseFlow();
+      goExpenseStep1();
+      openModal('modal-expense');
+    }
+
+    function editExpense(id) {
+      const expense = currentGroup?.expenses?.[id];
+      if (expense) openExpenseModal(expense);
+    }
+
+    function cancelExpenseFlow() {
+      expenseDraft = null;
+      closeModal('modal-expense');
+    }
+
+    function goExpenseStep1() {
+      document.getElementById('expense-step-amount').classList.add('active');
+      document.getElementById('expense-step-split').classList.remove('active');
+      calcTarget = 'total';
+      renderExpenseFlow();
+    }
+
+    function goExpenseStep2() {
+      if (!canGoStep2()) return;
+      document.getElementById('expense-step-amount').classList.remove('active');
+      document.getElementById('expense-step-split').classList.add('active');
+      if (expenseDraft.splitMode === 'custom' && !expenseDraft.activeShareUid) {
+        expenseDraft.activeShareUid = expenseDraft.splitWith[0] || '';
+      }
+      calcTarget = expenseDraft.activeShareUid || 'share';
+      renderExpenseFlow();
+    }
+
+    function formatCalcNumber(value) {
+      const num = Number(value || 0);
+      return Number.isInteger(num) ? String(num) : String(Math.round(num * 100) / 100);
+    }
+
+    function evalExpression(raw) {
+      const expr = String(raw || '').replaceAll('×', '*').replaceAll('÷', '/');
+      if (!expr || !/^[0-9+\-*/.() ]+$/.test(expr)) return 0;
+      try {
+        const value = Function(`"use strict"; return (${expr})`)();
+        return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function renderCalculator(containerId, targetType) {
+      const keys = ['C', '⌫', '÷', '×', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '=', '0', '00', '.', 'OK'];
+      document.getElementById(containerId).innerHTML = keys.map(key => {
+        const cls = ['÷', '×', '-', '+', '=', 'OK'].includes(key) ? 'calc-key op' : 'calc-key';
+        const primary = key === 'OK' ? ' primary' : '';
+        return `<button type="button" class="${cls}${primary}" onclick="pressCalc(${jsArg(targetType)}, ${jsArg(key)})">${escapeHTML(key)}</button>`;
+      }).join('');
+    }
+
+    function pressCalc(targetType, key) {
+      if (!expenseDraft) return;
+      if (targetType === 'total') {
+        expenseDraft.expression = nextExpression(expenseDraft.expression, key);
+        expenseDraft.amount = evalExpression(expenseDraft.expression);
+        expenseDraft.amountText = expenseDraft.expression;
+        if (expenseDraft.splitMode === 'custom') normalizeShares();
+      } else {
+        const uid = expenseDraft.activeShareUid;
+        if (!uid) return;
+        const current = expenseDraft.shareExpressions?.[uid] ?? formatCalcNumber(expenseDraft.shares[uid] || 0);
+        const next = nextExpression(current, key);
+        expenseDraft.shareExpressions = expenseDraft.shareExpressions || {};
+        expenseDraft.shareExpressions[uid] = next;
+        expenseDraft.shares[uid] = evalExpression(next);
+        autoFillRemainder(uid);
+      }
+      renderExpenseFlow();
+    }
+
+    function nextExpression(current, key) {
+      let value = String(current || '');
+      if (key === 'C') return '';
+      if (key === '⌫') return value.slice(0, -1);
+      if (key === 'OK' || key === '=') return formatCalcNumber(evalExpression(value));
+      if (key === '.' && /(^|[+\-*/×÷])[^+\-*/×÷]*\.$/.test(value)) return value;
+      if (['+', '-', '×', '÷'].includes(key) && (!value || /[+\-×÷]$/.test(value))) return value;
+      return value + key;
+    }
+
+    function setPayer(uid) {
+      if (!expenseDraft) return;
+      expenseDraft.paidBy = uid;
+      renderExpenseFlow();
+    }
+
+    function toggleSplitMember(uid) {
+      if (!expenseDraft) return;
+      const set = new Set(expenseDraft.splitWith);
+      if (set.has(uid)) {
+        if (set.size <= 1) return;
+        set.delete(uid);
+        delete expenseDraft.shares[uid];
+      } else {
+        set.add(uid);
+      }
+      expenseDraft.splitWith = Array.from(set);
+      if (!expenseDraft.splitWith.includes(expenseDraft.activeShareUid)) {
+        expenseDraft.activeShareUid = expenseDraft.splitWith[0] || '';
+      }
+      normalizeShares();
+      renderExpenseFlow();
+    }
+
+    function setSplitMode(mode) {
+      if (!expenseDraft) return;
+      expenseDraft.splitMode = mode;
+      if (mode === 'custom') normalizeShares();
+      renderExpenseFlow();
+    }
+
+    function setActiveShare(uid) {
+      if (!expenseDraft) return;
+      expenseDraft.activeShareUid = uid;
+      calcTarget = uid;
+      renderExpenseFlow();
+    }
+
+    function normalizeShares() {
+      if (!expenseDraft) return;
+      expenseDraft.splitWith.forEach(uid => {
+        if (expenseDraft.shares[uid] == null) expenseDraft.shares[uid] = 0;
+      });
+      Object.keys(expenseDraft.shares).forEach(uid => {
+        if (!expenseDraft.splitWith.includes(uid)) delete expenseDraft.shares[uid];
+      });
+    }
+
+    function autoFillRemainder(changedUid) {
+      const selected = expenseDraft.splitWith;
+      if (selected.length !== 2) return;
+      const other = selected.find(uid => uid !== changedUid);
+      if (!other) return;
+      const remaining = Math.max(0, Math.round((expenseDraft.amount - Number(expenseDraft.shares[changedUid] || 0)) * 100) / 100);
+      expenseDraft.shares[other] = remaining;
+      expenseDraft.shareExpressions = expenseDraft.shareExpressions || {};
+      expenseDraft.shareExpressions[other] = formatCalcNumber(remaining);
+    }
+
+    function canGoStep2() {
+      return !!expenseDraft && expenseDraft.amount > 0 && !!expenseDraft.paidBy;
+    }
+
+    function canSaveExpenseDraft() {
+      if (!canGoStep2() || expenseDraft.splitWith.length === 0) return false;
+      if (expenseDraft.splitMode === 'equal') return true;
+      const totalShare = expenseDraft.splitWith.reduce((sum, uid) => sum + Number(expenseDraft.shares[uid] || 0), 0);
+      return Math.abs(totalShare - expenseDraft.amount) < 0.01;
+    }
+
+    function renderExpenseFlow() {
+      if (!expenseDraft) return;
+      const members = getMembers();
+      document.getElementById('calc-display').innerText = expenseDraft.expression || '0';
+      document.getElementById('payer-choices').innerHTML = members.map(member => `
+        <button type="button" class="choice-card ${expenseDraft.paidBy === member.uid ? 'active' : ''}" onclick="setPayer(${jsArg(member.uid)})">
+          ${avatarHtml(member)}<span>${escapeHTML(member.name)}</span>
+        </button>
       `).join('');
 
-      document.getElementById('expense-title').value = '';
-      document.getElementById('expense-amount').value = '';
-      document.getElementById('expense-note').value = '';
-      openModal('modal-expense');
-      setTimeout(() => document.getElementById('expense-title').focus(), 150);
+      document.getElementById('split-choices').innerHTML = members.map(member => `
+        <button type="button" class="choice-card ${expenseDraft.splitWith.includes(member.uid) ? 'active' : ''}" onclick="toggleSplitMember(${jsArg(member.uid)})">
+          ${avatarHtml(member)}<span>${escapeHTML(member.name)}</span>
+        </button>
+      `).join('');
+
+      document.getElementById('btn-mode-equal').classList.toggle('active', expenseDraft.splitMode === 'equal');
+      document.getElementById('btn-mode-custom').classList.toggle('active', expenseDraft.splitMode === 'custom');
+      document.getElementById('custom-split-panel').classList.toggle('hidden', expenseDraft.splitMode !== 'custom');
+      document.getElementById('btn-expense-next').disabled = !canGoStep2();
+      document.getElementById('btn-save-expense').disabled = !canSaveExpenseDraft();
+
+      renderShareList();
+    }
+
+    function renderShareList() {
+      if (!expenseDraft) return;
+      normalizeShares();
+      const selected = getMembers().filter(member => expenseDraft.splitWith.includes(member.uid));
+      const totalShare = selected.reduce((sum, member) => sum + Number(expenseDraft.shares[member.uid] || 0), 0);
+      const remaining = Math.round((expenseDraft.amount - totalShare) * 100) / 100;
+      document.getElementById('custom-remaining').innerText = `剩餘 ${money(Math.max(0, remaining))}`;
+      document.getElementById('share-list').innerHTML = selected.map(member => `
+        <div class="share-row ${expenseDraft.activeShareUid === member.uid ? 'active' : ''}">
+          <div>${avatarHtml(member)} <b>${escapeHTML(member.name)}</b></div>
+          <button type="button" onclick="setActiveShare(${jsArg(member.uid)})">${money(expenseDraft.shares[member.uid] || 0)}</button>
+        </div>
+      `).join('');
+      const active = expenseDraft.activeShareUid;
+      const activeText = expenseDraft.shareExpressions?.[active] ?? formatCalcNumber(expenseDraft.shares[active] || 0);
+      document.getElementById('share-calc-display').innerText = activeText || '0';
     }
 
     async function saveExpense() {
-      if (!currentGroup || !currentUser) return;
-      const title = document.getElementById('expense-title').value.trim();
-      const amount = Number(document.getElementById('expense-amount').value);
-      const paidBy = document.getElementById('expense-paid-by').value;
-      const note = document.getElementById('expense-note').value.trim();
-      const splitWith = Array.from(document.querySelectorAll('#split-checks input:checked')).map(input => input.value);
+      if (!currentGroup || !currentUser || !canSaveExpenseDraft()) return;
+      const id = expenseDraft.id || `ex_${Date.now()}`;
+      const amount = Math.round(expenseDraft.amount * 100) / 100;
+      const splitWith = expenseDraft.splitWith.slice();
+      const expense = {
+        id,
+        title: expenseDraft.title || '支出',
+        amount,
+        paidBy: expenseDraft.paidBy,
+        splitWith,
+        note: expenseDraft.note || '',
+        createdBy: currentUser.uid,
+        createdAt: expenseDraft.createdAt || Date.now(),
+        updatedAt: Date.now()
+      };
+      if (expenseDraft.splitMode === 'custom') {
+        expense.shares = {};
+        splitWith.forEach(uid => expense.shares[uid] = Math.round(Number(expenseDraft.shares[uid] || 0) * 100) / 100);
+      }
 
-      if (!title) return alert('請輸入項目');
-      if (!amount || amount <= 0) return alert('請輸入正確金額');
-      if (!paidBy) return alert('請選擇付款人');
-      if (splitWith.length === 0) return alert('至少要選一個分攤的人');
-
-      const id = `ex_${Date.now()}`;
-      const expense = { id, title, amount, paidBy, splitWith, note, createdBy: currentUser.uid, createdAt: Date.now() };
       await db.collection('splitGroups').doc(currentGroupId).update({
         [`expenses.${id}`]: expense,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      expenseDraft = null;
       closeModal('modal-expense');
     }
 
@@ -1021,6 +1434,15 @@
         prompt('請複製邀請連結：', url);
       });
     }
+
+    document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
+    document.addEventListener('touchend', event => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 320 && !event.target.closest('button, input, textarea, select')) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
