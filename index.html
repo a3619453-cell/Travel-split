@@ -95,9 +95,9 @@
     .icon-btn {
       width: 42px;
       height: 42px;
-      border: 1px solid transparent;
+      border: 0;
       border-radius: var(--radius);
-      background: #F4F4F2;
+      background: #E2E2DE;
       color: var(--ink);
       display: flex;
       align-items: center;
@@ -125,9 +125,9 @@
     .btn:hover, .icon-btn:hover { background: var(--accent-dark); color: #fff; }
     .btn:active, .icon-btn:active, .chip:active { transform: translateY(1px); }
     .btn.secondary {
-      background: #F4F4F2;
+      background: #DCDCD8;
       color: var(--ink);
-      border: 1px solid var(--line);
+      border: 0;
       box-shadow: none;
     }
     .btn.danger {
@@ -153,7 +153,7 @@
       border-radius: var(--radius);
       padding: 16px;
       background: var(--panel);
-      border: 1px solid var(--line);
+      border: 0;
       box-shadow: none;
       animation: rise 0.35s ease both;
     }
@@ -187,7 +187,7 @@
       padding: 16px;
       border-radius: var(--radius);
       background: #fff;
-      border: 1px solid var(--line);
+      border: 0;
     }
     .summary-card span {
       display: block;
@@ -213,7 +213,7 @@
     .group-card, .expense-card, .settle-card, .member-row {
       border-radius: var(--radius);
       background: var(--panel);
-      border: 1px solid var(--line);
+      border: 0;
       box-shadow: none;
       animation: rise 0.28s ease both;
     }
@@ -250,7 +250,7 @@
       padding: 4px;
       border-radius: var(--radius);
       background: #E4E4E0;
-      border: 1px solid var(--line);
+      border: 0;
     }
     .tab {
       border: 0;
@@ -283,7 +283,7 @@
       padding: 7px 11px 7px 7px;
       border-radius: var(--radius);
       background: #F8F8F6;
-      border: 1px solid var(--line);
+      border: 0;
       color: var(--ink);
       font-size: 13px;
       font-weight: 700;
@@ -325,9 +325,9 @@
 
     .empty {
       padding: 42px 22px;
-      border: 1px dashed rgba(146,146,146,0.45);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--panel);
+      background: #DEDEDA;
       text-align: center;
       color: var(--muted);
     }
@@ -358,9 +358,12 @@
       gap: 12px;
       align-items: center;
       padding: 14px 4px;
-      border-bottom: 1px solid rgba(221,221,221,0.74);
+      margin-bottom: 8px;
+      border-radius: var(--radius);
+      background: #DCDCD8;
+      padding: 14px;
     }
-    .balance-row:last-child { border-bottom: 0; }
+    .balance-row:last-child { margin-bottom: 0; }
     .balance-row b { display: block; font-size: 15px; }
     .balance-row span { color: var(--muted); font-size: 12px; }
 
@@ -374,7 +377,7 @@
       background: rgba(244, 244, 242, .94);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-top: 1px solid var(--line);
+      border-top: 0;
       z-index: 50;
       box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
     }
@@ -431,7 +434,7 @@
       padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
       border-radius: var(--radius) var(--radius) 0 0;
       background: #EDEDEA;
-      border: 1px solid var(--line);
+      border: 0;
       transform: translateY(100%);
       transition: 0.25s ease;
     }
@@ -443,15 +446,15 @@
     .field label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 13px; font-weight: 800; }
     .control {
       width: 100%;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--paper);
+      background: #DCDCD8;
       min-height: 48px;
       padding: 12px 14px;
       color: var(--ink);
       outline: none;
     }
-    .control:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(51, 65, 85, .18); }
+    .control:focus { background: #F4F4F2; box-shadow: none; }
     textarea.control { resize: vertical; min-height: 76px; }
 
     .check-grid {
@@ -465,9 +468,9 @@
       gap: 10px;
       min-height: 48px;
       padding: 10px 12px;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--paper);
+      background: #DCDCD8;
     }
     .check-item input { width: 20px; height: 20px; accent-color: var(--accent); }
 
@@ -505,6 +508,12 @@
     .split-step.active {
       justify-content: flex-start;
     }
+    #split-choices {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    #split-choices .choice-card {
+      min-height: 46px;
+    }
     .calc-control {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 56px;
@@ -515,8 +524,8 @@
       min-height: 68px;
       padding: 12px 14px;
       border-radius: var(--radius);
-      background: var(--paper);
-      border: 1px solid var(--line);
+      background: #DCDCD8;
+      border: 0;
       display: flex;
       align-items: flex-end;
       justify-content: flex-end;
@@ -527,9 +536,9 @@
     }
     .calc-back {
       min-height: 68px;
-      border: 1px solid var(--line-strong);
+      border: 0;
       border-radius: var(--radius);
-      background: #F4F4F2;
+      background: #D4D4D0;
       color: var(--ink);
       font-size: 19px;
       font-weight: 500;
@@ -542,13 +551,13 @@
       gap: 8px;
       padding: 10px;
       background: #E6E6E2;
-      border: 1px solid #D5D5D1;
+      border: 0;
       border-radius: 18px;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68);
     }
     .calc-key {
       min-height: 50px;
-      border: 1px solid #D9D9D6;
+      border: 0;
       border-radius: 16px;
       background: #F8F8F6;
       color: var(--ink);
@@ -560,7 +569,6 @@
     .calc-key:hover { background: #fff; }
     .calc-key.op {
       background: #A8B9CC;
-      border-color: #A8B9CC;
       color: #111;
       box-shadow: 0 7px 16px rgba(168, 185, 204, .24);
     }
@@ -572,11 +580,11 @@
       gap: 8px;
     }
     .choice-card {
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--paper);
-      min-height: 54px;
-      padding: 10px;
+      background: #DCDCD8;
+      min-height: 48px;
+      padding: 9px 10px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -587,18 +595,17 @@
       text-align: left;
     }
     .choice-card.active {
-      border-color: #e8792f;
-      background: #fff3e9;
-      box-shadow: inset 0 0 0 1px #e8792f;
+      background: #e8c7ad;
+      box-shadow: none;
     }
     .mode-switch {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       padding: 4px;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--cloud);
+      background: #D6D6D2;
     }
     .mode-switch button {
       min-height: 42px;
@@ -618,22 +625,21 @@
       align-items: center;
       gap: 10px;
       padding: 10px;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: var(--paper);
+      background: #DCDCD8;
     }
     .share-row button {
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: var(--radius);
-      background: #F8F8F6;
-      min-width: 112px;
-      min-height: 44px;
+      background: #F4F4F2;
+      min-width: 104px;
+      min-height: 40px;
       font-weight: 500;
       color: var(--ink);
     }
     .share-row.active button {
-      border-color: #e8792f;
-      background: #fff3e9;
+      background: #ead9ca;
     }
     .split-panel {
       max-height: 0;
@@ -641,11 +647,15 @@
       overflow: hidden;
       transform: translateY(-6px);
       transition: max-height .28s ease, opacity .2s ease, transform .24s ease;
+      background: #D6D6D2;
+      border-radius: var(--radius);
+      padding: 0 10px;
     }
     .split-panel.show {
       max-height: 620px;
       opacity: 1;
       transform: translateY(0);
+      padding: 10px;
     }
     .flow-actions {
       margin-top: 2px;
@@ -669,7 +679,7 @@
     <div class="topbar">
       <h1 class="title">輕便分帳</h1>
       <button id="btn-login" class="btn" style="min-height:40px; padding:8px 14px;" onclick="loginGoogle()">Google 登入</button>
-      <img id="user-avatar" src="" class="avatar hidden" style="width:38px;height:38px;cursor:pointer;border:2px solid white;box-shadow:var(--shadow);" onclick="logout()" title="登出">
+      <img id="user-avatar" src="" class="avatar hidden" style="width:38px;height:38px;cursor:pointer;box-shadow:var(--shadow);" onclick="logout()" title="登出">
     </div>
 
     <section class="hero">
