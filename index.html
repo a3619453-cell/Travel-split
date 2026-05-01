@@ -483,7 +483,7 @@
 
     <section class="hero">
       <p class="hero-label">總計</p>
-      <h2 class="hero-amount" id="total-amount">$0</h2>
+      <h2 class="hero-amount" id="total-amount">NT$0</h2>
       <p class="hero-sub" id="group-subtitle">0 位成員 · 0 筆支出</p>
       <div class="summary-grid">
         <div class="summary-card"><span>我先付</span><strong id="my-paid">$0</strong></div>
@@ -527,7 +527,18 @@
       </div>
       <div class="field">
         <label for="group-currency">幣別</label>
-        <input id="group-currency" class="control" value="$" placeholder="$">
+        <select id="group-currency" class="control">
+          <option value="NT$">TWD 台幣</option>
+          <option value="¥">JPY 日圓</option>
+          <option value="US$">USD 美金</option>
+          <option value="€">EUR 歐元</option>
+          <option value="HK$">HKD 港幣</option>
+          <option value="₩">KRW 韓元</option>
+          <option value="฿">THB 泰銖</option>
+          <option value="S$">SGD 新加坡幣</option>
+          <option value="£">GBP 英鎊</option>
+          <option value="A$">AUD 澳幣</option>
+        </select>
       </div>
       <button class="btn" style="width:100%;" onclick="saveGroup()">完成</button>
     </div>
@@ -633,7 +644,7 @@
     }
 
     function money(value, group = currentGroup) {
-      const symbol = group?.currency || '$';
+      const symbol = group?.currency || 'NT$';
       const amount = Number(value || 0);
       return symbol + amount.toLocaleString('zh-TW', { maximumFractionDigits: 2 });
     }
@@ -918,7 +929,7 @@
     async function saveGroup() {
       if (!currentUser) return alert('請先登入');
       const title = document.getElementById('group-title').value.trim();
-      const currency = document.getElementById('group-currency').value.trim() || '$';
+      const currency = document.getElementById('group-currency').value.trim() || 'NT$';
       if (!title) return alert('請輸入群組名稱');
 
       const id = `sg_${Date.now()}`;
@@ -933,6 +944,7 @@
       });
 
       document.getElementById('group-title').value = '';
+      document.getElementById('group-currency').value = 'NT$';
       closeModal('modal-group');
       currentGroupId = id;
       currentGroup = {
