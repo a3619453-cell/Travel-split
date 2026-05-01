@@ -476,15 +476,37 @@
       min-height: 82vh;
       display: flex;
       flex-direction: column;
+      transition: min-height .28s ease, max-height .28s ease, transform .25s ease;
     }
     .expense-flow .section-title {
       font-weight: 600;
     }
-    .expense-step { display: none; flex: 1; }
+    .expense-step {
+      flex: 0 0 auto;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: max-height .28s ease, opacity .2s ease, transform .24s ease;
+    }
     .expense-step.active {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      flex: 1 1 auto;
+      max-height: calc(100vh - 92px);
+      opacity: 1;
+      overflow: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .amount-step.active {
+      justify-content: flex-end;
+      padding-top: min(8vh, 58px);
+    }
+    .split-step.active {
+      justify-content: flex-start;
     }
     .calc-control {
       display: grid;
@@ -616,8 +638,20 @@
       border-color: #e8792f;
       background: #fff3e9;
     }
+    .split-panel {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-6px);
+      transition: max-height .28s ease, opacity .2s ease, transform .24s ease;
+    }
+    .split-panel.show {
+      max-height: 620px;
+      opacity: 1;
+      transform: translateY(0);
+    }
     .flow-actions {
-      margin-top: auto;
+      margin-top: 4px;
       display: grid;
       grid-template-columns: 1fr;
       gap: 8px;
@@ -742,7 +776,7 @@
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <div id="expense-step-amount" class="expense-step active">
+      <div id="expense-step-amount" class="expense-step amount-step active">
         <div>
           <p class="section-title" style="margin: 0 2px 10px;">誰出錢</p>
           <div class="choice-grid" id="payer-choices"></div>
@@ -757,16 +791,20 @@
         </div>
       </div>
 
-      <div id="expense-step-split" class="expense-step">
+      <div id="expense-step-split" class="expense-step split-step">
         <div class="mode-switch">
           <button id="btn-mode-equal" class="active" onclick="setSplitMode('equal')">為誰付錢</button>
           <button id="btn-mode-custom" onclick="setSplitMode('custom')">項目分錢</button>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="expense-title-input">這是什麼東西花的錢</label>
+          <input id="expense-title-input" class="control" placeholder="例如：晚餐、車票、住宿" oninput="setExpenseTitle(this.value)">
         </div>
         <div>
           <p class="section-title" style="margin: 4px 2px 10px;">分給誰</p>
           <div class="choice-grid" id="split-choices"></div>
         </div>
-        <div id="custom-split-panel" class="hidden">
+        <div id="custom-split-panel" class="split-panel">
           <p class="flow-note" id="custom-remaining">剩餘 0</p>
           <div class="check-grid" id="share-list"></div>
           <div class="calc-control">
@@ -1212,7 +1250,7 @@
 
       expenseDraft = {
         id: expense?.id || null,
-        title: expense?.title || '支出',
+        title: expense?.title || '',
         amountText: amount ? formatCalcNumber(amount) : '',
         expression: amount ? formatCalcNumber(amount) : '',
         amount,
@@ -1324,6 +1362,12 @@
       renderExpenseFlow();
     }
 
+    function setExpenseTitle(value) {
+      if (!expenseDraft) return;
+      expenseDraft.title = value;
+      document.getElementById('btn-save-expense').disabled = !canSaveExpenseDraft();
+    }
+
     function toggleSplitMember(uid) {
       if (!expenseDraft) return;
       const set = new Set(expenseDraft.splitWith);
@@ -1382,7 +1426,7 @@
     }
 
     function canSaveExpenseDraft() {
-      if (!canGoStep2() || expenseDraft.splitWith.length === 0) return false;
+      if (!canGoStep2() || expenseDraft.splitWith.length === 0 || !String(expenseDraft.title || '').trim()) return false;
       if (expenseDraft.splitMode === 'equal') return true;
       const totalShare = expenseDraft.splitWith.reduce((sum, uid) => sum + Number(expenseDraft.shares[uid] || 0), 0);
       return Math.abs(totalShare - expenseDraft.amount) < 0.01;
@@ -1406,7 +1450,9 @@
 
       document.getElementById('btn-mode-equal').classList.toggle('active', expenseDraft.splitMode === 'equal');
       document.getElementById('btn-mode-custom').classList.toggle('active', expenseDraft.splitMode === 'custom');
-      document.getElementById('custom-split-panel').classList.toggle('hidden', expenseDraft.splitMode !== 'custom');
+      const titleInput = document.getElementById('expense-title-input');
+      if (titleInput && titleInput.value !== expenseDraft.title) titleInput.value = expenseDraft.title || '';
+      document.getElementById('custom-split-panel').classList.toggle('show', expenseDraft.splitMode === 'custom');
       document.getElementById('btn-expense-next').disabled = !canGoStep2();
       document.getElementById('btn-save-expense').disabled = !canSaveExpenseDraft();
 
@@ -1438,7 +1484,7 @@
       const splitWith = expenseDraft.splitWith.slice();
       const expense = {
         id,
-        title: expenseDraft.title || '支出',
+        title: String(expenseDraft.title || '').trim(),
         amount,
         paidBy: expenseDraft.paidBy,
         splitWith,
