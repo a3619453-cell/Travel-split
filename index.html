@@ -339,34 +339,45 @@
       color: var(--muted);
     }
 
-    .expense-card {
-      padding: 16px;
+    .expense-row {
+      position: relative;
       margin-bottom: 10px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #b8443d;
+      animation: rise 0.28s ease both;
+    }
+    .expense-card {
+      position: relative;
+      z-index: 1;
+      padding: 16px;
+      margin-bottom: 0;
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 10px;
+      transition: transform .34s var(--spring), border-radius .28s ease;
+      touch-action: pan-y;
     }
+    .expense-row.reveal .expense-card { transform: translateX(-92px); }
     .expense-card h3 { margin: 0 0 7px; font-size: 16px; }
     .expense-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .expense-amount { font-size: 19px; font-weight: 850; white-space: nowrap; }
-    .delete-mini {
-      justify-self: end;
-      align-self: end;
+    .swipe-delete {
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 92px;
       border: 0;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: #E0D6D2;
-      color: #9f332d;
+      background: #b8443d;
+      color: #fff;
       padding: 0;
       cursor: pointer;
-      display: inline-flex;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: background .22s ease, transform .28s var(--spring);
     }
-    .delete-mini svg { width: 17px; height: 17px; stroke-width: 2.2px; }
-    .delete-mini:active { transform: scale(.94); }
+    .swipe-delete svg { width: 20px; height: 20px; stroke-width: 2.1px; }
+    .swipe-delete:active { background: #9f332d; }
 
     .empty {
       padding: 42px 22px;
@@ -1238,18 +1249,97 @@
       container.innerHTML = expenses.map((expense, index) => {
         const splitNames = (expense.splitWith || []).map(uid => memberName(uid)).join('、');
         return `
-          <div class="expense-card" style="animation-delay:${index * 0.035}s" onclick="editExpense(${jsArg(expense.id)})">
-            <div>
-              <h3>${escapeHTML(expense.title || '未命名支出')}</h3>
-              <p>${escapeHTML(memberName(expense.paidBy))} 先付 · 分給 ${escapeHTML(splitNames || '無人')}</p>
-              ${expense.note ? `<p>${escapeHTML(expense.note)}</p>` : ''}
-            </div>
-            <div>
-              <div class="expense-amount">${money(expense.amount)}</div>
-              <button class="delete-mini" onclick="event.stopPropagation(); deleteExpense(${jsArg(expense.id)})" title="刪除">${icons.trash}</button>
+          <div class="expense-row" style="animation-delay:${index * 0.035}s" data-expense-id="${escapeAttr(expense.id)}">
+            <button class="swipe-delete" onclick="event.stopPropagation(); deleteExpense(${jsArg(expense.id)})" title="刪除" aria-label="刪除此筆支出">${icons.trash}</button>
+            <div class="expense-card" onclick="handleExpenseCardClick(event, ${jsArg(expense.id)})">
+              <div>
+                <h3>${escapeHTML(expense.title || '未命名支出')}</h3>
+                <p>${escapeHTML(memberName(expense.paidBy))} 先付 · 分給 ${escapeHTML(splitNames || '無人')}</p>
+                ${expense.note ? `<p>${escapeHTML(expense.note)}</p>` : ''}
+              </div>
+              <div>
+                <div class="expense-amount">${money(expense.amount)}</div>
+              </div>
             </div>
           </div>`;
       }).join('');
+      bindExpenseSwipe();
+    }
+
+    function closeSwipeRows(exceptRow = null) {
+      document.querySelectorAll('.expense-row.reveal').forEach(row => {
+        if (row !== exceptRow) row.classList.remove('reveal');
+      });
+    }
+
+    function handleExpenseCardClick(event, id) {
+      const row = event.currentTarget.closest('.expense-row');
+      if (row?.classList.contains('reveal')) {
+        row.classList.remove('reveal');
+        return;
+      }
+      editExpense(id);
+    }
+
+    function bindExpenseSwipe() {
+      document.querySelectorAll('.expense-row').forEach(row => {
+        let startX = 0;
+        let startY = 0;
+        let tracking = false;
+
+        row.ontouchstart = event => {
+          const touch = event.touches[0];
+          startX = touch.clientX;
+          startY = touch.clientY;
+          tracking = true;
+        };
+
+        row.ontouchmove = event => {
+          if (!tracking) return;
+          const touch = event.touches[0];
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+          if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy)) {
+            event.preventDefault();
+          }
+        };
+
+        row.ontouchend = event => {
+          if (!tracking) return;
+          tracking = false;
+          const touch = event.changedTouches[0];
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+          if (Math.abs(dx) < 38 || Math.abs(dx) < Math.abs(dy)) return;
+          if (dx < 0) {
+            closeSwipeRows(row);
+            row.classList.add('reveal');
+          } else {
+            row.classList.remove('reveal');
+          }
+        };
+
+        row.onpointerdown = event => {
+          if (event.pointerType === 'touch') return;
+          startX = event.clientX;
+          startY = event.clientY;
+          tracking = true;
+        };
+
+        row.onpointerup = event => {
+          if (!tracking || event.pointerType === 'touch') return;
+          tracking = false;
+          const dx = event.clientX - startX;
+          const dy = event.clientY - startY;
+          if (Math.abs(dx) < 38 || Math.abs(dx) < Math.abs(dy)) return;
+          if (dx < 0) {
+            closeSwipeRows(row);
+            row.classList.add('reveal');
+          } else {
+            row.classList.remove('reveal');
+          }
+        };
+      });
     }
 
     function renderSettlement(summary) {
