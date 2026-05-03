@@ -353,11 +353,20 @@
       justify-self: end;
       align-self: end;
       border: 0;
-      background: transparent;
-      color: var(--light);
-      padding: 5px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #E0D6D2;
+      color: #9f332d;
+      padding: 0;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .22s ease, transform .28s var(--spring);
     }
+    .delete-mini svg { width: 17px; height: 17px; stroke-width: 2.2px; }
+    .delete-mini:active { transform: scale(.94); }
 
     .empty {
       padding: 42px 22px;
