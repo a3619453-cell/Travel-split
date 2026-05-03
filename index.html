@@ -339,45 +339,76 @@
       color: var(--muted);
     }
 
-    .expense-row {
-      position: relative;
-      margin-bottom: 10px;
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: #b8443d;
-      animation: rise 0.28s ease both;
-    }
     .expense-card {
-      position: relative;
-      z-index: 1;
       padding: 16px;
-      margin-bottom: 0;
+      margin-bottom: 10px;
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: auto 1fr auto auto;
       gap: 10px;
-      transition: transform .34s var(--spring), border-radius .28s ease;
-      touch-action: pan-y;
+      align-items: center;
+      transition: background .24s ease, transform .28s var(--spring);
+      cursor: pointer;
     }
-    .expense-row.reveal .expense-card { transform: translateX(-92px); }
+    .expense-card:active { transform: scale(.992); }
     .expense-card h3 { margin: 0 0 7px; font-size: 16px; }
     .expense-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .expense-amount { font-size: 19px; font-weight: 850; white-space: nowrap; }
-    .swipe-delete {
-      position: absolute;
-      inset: 0 0 0 auto;
-      width: 92px;
+    .expense-check,
+    .expense-delete {
       border: 0;
-      background: #b8443d;
-      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
       padding: 0;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
+      display: none;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: background .24s ease, transform .28s var(--spring);
     }
-    .swipe-delete svg { width: 20px; height: 20px; stroke-width: 2.1px; }
-    .swipe-delete:active { background: #9f332d; }
+    body.expense-editing .expense-check,
+    body.expense-editing .expense-delete {
+      display: inline-flex;
+    }
+    .expense-check {
+      background: #D6D6D2;
+      color: transparent;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .expense-card.selected .expense-check {
+      background: #e8792f;
+      color: #fff;
+    }
+    .expense-delete {
+      background: #E0D6D2;
+      color: #9f332d;
+    }
+    .expense-delete svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.1px;
+    }
+    .expense-edit-bar {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%) translateY(100%);
+      width: min(760px, 100%);
+      padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(237, 237, 234, .94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 55;
+      transition: transform .34s var(--spring);
+    }
+    body.expense-editing .expense-edit-bar.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    .expense-edit-bar .btn {
+      width: 100%;
+      background: #b8443d;
+    }
 
     .empty {
       padding: 42px 22px;
@@ -803,6 +834,15 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.59 10.49 15.41 6.51M8.59 13.51 15.42 17.49"></path>
         </svg>
       </button>
+      <button id="btn-expense-edit" class="icon-btn" onclick="toggleExpenseEditMode()" title="編輯支出">
+        <svg id="icon-edit-list" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h10M4 12h16M4 17h10"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="m17 6 2 2 1.5-1.5a1.4 1.4 0 0 0-2-2L17 6Zm0 0-4 4v2h2l4-4"></path>
+        </svg>
+        <svg id="icon-edit-done" class="hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"></path>
+        </svg>
+      </button>
     </div>
 
     <section class="hero">
@@ -834,6 +874,10 @@
 
     <div class="bottom-action">
       <button class="fab" onclick="openExpenseModal()" aria-label="新增支出">+</button>
+    </div>
+
+    <div id="expense-edit-bar" class="expense-edit-bar">
+      <button id="btn-delete-selected" class="btn" onclick="deleteSelectedExpenses()" disabled>刪除選取項目</button>
     </div>
   </div>
 
@@ -929,6 +973,8 @@
     let groupUnsubscribe = null;
     let activeTab = 'expenses';
     let autoOpenGroup = true;
+    let isExpenseEditing = false;
+    let selectedExpenseIds = new Set();
     let expenseDraft = null;
     let calcTarget = 'total';
     let lastTouchEnd = 0;
@@ -1187,6 +1233,9 @@
 
     function selectGroup(id) {
       autoOpenGroup = true;
+      isExpenseEditing = false;
+      selectedExpenseIds.clear();
+      updateExpenseEditUI();
       currentGroupId = id;
       currentGroup = groups.find(group => group.id === id) || null;
       if (!currentGroup) return;
@@ -1197,6 +1246,9 @@
 
     function goList() {
       autoOpenGroup = false;
+      isExpenseEditing = false;
+      selectedExpenseIds.clear();
+      updateExpenseEditUI();
       currentGroupId = null;
       currentGroup = null;
       document.getElementById('view-detail').classList.remove('active');
@@ -1242,16 +1294,20 @@
     function renderExpenses(expenses) {
       const container = document.getElementById('expense-list');
       if (expenses.length === 0) {
+        selectedExpenseIds.clear();
+        updateExpenseEditUI();
         container.innerHTML = '<div class="empty"><h3>沒有支出</h3></div>';
         return;
       }
 
+      const existingIds = new Set(expenses.map(expense => String(expense.id)));
+      selectedExpenseIds = new Set([...selectedExpenseIds].filter(id => existingIds.has(id)));
       container.innerHTML = expenses.map((expense, index) => {
         const splitNames = (expense.splitWith || []).map(uid => memberName(uid)).join('、');
+        const selectedClass = selectedExpenseIds.has(String(expense.id)) ? ' selected' : '';
         return `
-          <div class="expense-row" style="animation-delay:${index * 0.035}s" data-expense-id="${escapeAttr(expense.id)}">
-            <button class="swipe-delete" onclick="event.stopPropagation(); deleteExpense(${jsArg(expense.id)})" title="刪除" aria-label="刪除此筆支出">${icons.trash}</button>
-            <div class="expense-card" onclick="handleExpenseCardClick(event, ${jsArg(expense.id)})">
+            <div class="expense-card${selectedClass}" style="animation-delay:${index * 0.035}s" onclick="handleExpenseCardClick(event, ${jsArg(expense.id)})">
+              <button class="expense-check" data-id="${escapeAttr(expense.id)}" onclick="event.stopPropagation(); toggleExpenseSelection(${jsArg(expense.id)})" aria-label="選取支出">✓</button>
               <div>
                 <h3>${escapeHTML(expense.title || '未命名支出')}</h3>
                 <p>${escapeHTML(memberName(expense.paidBy))} 先付 · 分給 ${escapeHTML(splitNames || '無人')}</p>
@@ -1260,86 +1316,54 @@
               <div>
                 <div class="expense-amount">${money(expense.amount)}</div>
               </div>
-            </div>
-          </div>`;
+              <button class="expense-delete" onclick="event.stopPropagation(); deleteExpense(${jsArg(expense.id)})" title="刪除" aria-label="刪除此筆支出">${icons.trash}</button>
+            </div>`;
       }).join('');
-      bindExpenseSwipe();
-    }
-
-    function closeSwipeRows(exceptRow = null) {
-      document.querySelectorAll('.expense-row.reveal').forEach(row => {
-        if (row !== exceptRow) row.classList.remove('reveal');
-      });
+      updateExpenseEditUI();
     }
 
     function handleExpenseCardClick(event, id) {
-      const row = event.currentTarget.closest('.expense-row');
-      if (row?.classList.contains('reveal')) {
-        row.classList.remove('reveal');
+      if (isExpenseEditing) {
+        toggleExpenseSelection(id);
         return;
       }
       editExpense(id);
     }
 
-    function bindExpenseSwipe() {
-      document.querySelectorAll('.expense-row').forEach(row => {
-        let startX = 0;
-        let startY = 0;
-        let tracking = false;
+    function toggleExpenseEditMode() {
+      isExpenseEditing = !isExpenseEditing;
+      if (!isExpenseEditing) selectedExpenseIds.clear();
+      updateExpenseEditUI();
+      renderExpenses(getExpenses());
+    }
 
-        row.ontouchstart = event => {
-          const touch = event.touches[0];
-          startX = touch.clientX;
-          startY = touch.clientY;
-          tracking = true;
-        };
-
-        row.ontouchmove = event => {
-          if (!tracking) return;
-          const touch = event.touches[0];
-          const dx = touch.clientX - startX;
-          const dy = touch.clientY - startY;
-          if (Math.abs(dx) > 18 && Math.abs(dx) > Math.abs(dy)) {
-            event.preventDefault();
-          }
-        };
-
-        row.ontouchend = event => {
-          if (!tracking) return;
-          tracking = false;
-          const touch = event.changedTouches[0];
-          const dx = touch.clientX - startX;
-          const dy = touch.clientY - startY;
-          if (Math.abs(dx) < 38 || Math.abs(dx) < Math.abs(dy)) return;
-          if (dx < 0) {
-            closeSwipeRows(row);
-            row.classList.add('reveal');
-          } else {
-            row.classList.remove('reveal');
-          }
-        };
-
-        row.onpointerdown = event => {
-          if (event.pointerType === 'touch') return;
-          startX = event.clientX;
-          startY = event.clientY;
-          tracking = true;
-        };
-
-        row.onpointerup = event => {
-          if (!tracking || event.pointerType === 'touch') return;
-          tracking = false;
-          const dx = event.clientX - startX;
-          const dy = event.clientY - startY;
-          if (Math.abs(dx) < 38 || Math.abs(dx) < Math.abs(dy)) return;
-          if (dx < 0) {
-            closeSwipeRows(row);
-            row.classList.add('reveal');
-          } else {
-            row.classList.remove('reveal');
-          }
-        };
+    function toggleExpenseSelection(id) {
+      const key = String(id);
+      if (selectedExpenseIds.has(key)) {
+        selectedExpenseIds.delete(key);
+      } else {
+        selectedExpenseIds.add(key);
+      }
+      updateExpenseEditUI();
+      document.querySelectorAll('.expense-card').forEach(card => {
+        const button = card.querySelector('.expense-check');
+        const cardId = button?.getAttribute('data-id');
+        if (cardId) card.classList.toggle('selected', selectedExpenseIds.has(cardId));
       });
+      renderExpenses(getExpenses());
+    }
+
+    function updateExpenseEditUI() {
+      document.body.classList.toggle('expense-editing', isExpenseEditing);
+      document.getElementById('icon-edit-list')?.classList.toggle('hidden', isExpenseEditing);
+      document.getElementById('icon-edit-done')?.classList.toggle('hidden', !isExpenseEditing);
+      const bar = document.getElementById('expense-edit-bar');
+      const btn = document.getElementById('btn-delete-selected');
+      if (bar) bar.classList.toggle('show', selectedExpenseIds.size > 0);
+      if (btn) {
+        btn.disabled = selectedExpenseIds.size === 0;
+        btn.innerText = selectedExpenseIds.size ? `刪除 ${selectedExpenseIds.size} 筆` : '刪除選取項目';
+      }
     }
 
     function renderSettlement(summary) {
@@ -1708,6 +1732,22 @@
         [`expenses.${id}`]: firebase.firestore.FieldValue.delete(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      selectedExpenseIds.delete(String(id));
+      updateExpenseEditUI();
+    }
+
+    async function deleteSelectedExpenses() {
+      if (!currentGroup || selectedExpenseIds.size === 0) return;
+      const count = selectedExpenseIds.size;
+      if (!confirm(`確定刪除選取的 ${count} 筆支出？`)) return;
+      const patch = { updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      selectedExpenseIds.forEach(id => {
+        patch[`expenses.${id}`] = firebase.firestore.FieldValue.delete();
+      });
+      await db.collection('splitGroups').doc(currentGroupId).update(patch);
+      selectedExpenseIds.clear();
+      isExpenseEditing = false;
+      updateExpenseEditUI();
     }
 
     function shareGroup() {
