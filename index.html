@@ -534,9 +534,10 @@
       background: #EDEDEA;
       border: 0;
       transform: translateY(100%);
-      transition: transform .34s cubic-bezier(.2, .8, .2, 1), max-height .34s cubic-bezier(.2, .8, .2, 1);
+      transition: transform .34s cubic-bezier(.2, .8, .2, 1), height .34s cubic-bezier(.2, .8, .2, 1), max-height .34s cubic-bezier(.2, .8, .2, 1);
     }
     .modal.active .sheet { transform: translateY(0); }
+    .sheet.height-animating { overflow: hidden; }
     .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
     .sheet-head h2 { margin: 0; font-size: 20px; }
 
@@ -577,28 +578,25 @@
       min-height: 0;
       display: block;
       scroll-behavior: smooth;
-      transition: max-height .34s cubic-bezier(.2, .8, .2, 1), transform .34s cubic-bezier(.2, .8, .2, 1);
+      transition: height .34s cubic-bezier(.2, .8, .2, 1), transform .34s cubic-bezier(.2, .8, .2, 1), max-height .34s cubic-bezier(.2, .8, .2, 1);
     }
     .expense-flow .section-title {
       font-weight: 600;
     }
     .expense-step {
-      max-height: 0;
+      display: none;
       opacity: 0;
-      overflow: hidden;
       pointer-events: none;
       transform: translateY(10px);
-      transition: max-height .38s cubic-bezier(.2, .8, .2, 1), opacity .24s ease, transform .34s cubic-bezier(.2, .8, .2, 1);
     }
     .expense-step.active {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 1500px;
       opacity: 1;
-      overflow: visible;
       pointer-events: auto;
       transform: translateY(0);
+      animation: panelLiquidIn .28s cubic-bezier(.2, .8, .2, 1);
     }
     .amount-step.active {
       justify-content: flex-start;
@@ -1526,22 +1524,58 @@
       closeModal('modal-expense');
     }
 
+    function animateExpenseSheet(updateFn) {
+      const modal = document.getElementById('modal-expense');
+      const sheet = modal?.querySelector('.sheet');
+      if (!modal?.classList.contains('active') || !sheet) {
+        updateFn();
+        return;
+      }
+
+      const startHeight = sheet.getBoundingClientRect().height;
+      sheet.style.height = `${startHeight}px`;
+      sheet.classList.add('height-animating');
+
+      updateFn();
+
+      requestAnimationFrame(() => {
+        const maxHeight = Math.min(window.innerHeight * 0.92, 880);
+        const targetHeight = Math.min(sheet.scrollHeight, maxHeight);
+        sheet.style.height = `${targetHeight}px`;
+
+        let cleaned = false;
+        const cleanup = () => {
+          if (cleaned) return;
+          cleaned = true;
+          sheet.style.height = '';
+          sheet.classList.remove('height-animating');
+          sheet.removeEventListener('transitionend', cleanup);
+        };
+        sheet.addEventListener('transitionend', cleanup);
+        setTimeout(cleanup, 460);
+      });
+    }
+
     function goExpenseStep1() {
-      document.getElementById('expense-step-amount').classList.add('active');
-      document.getElementById('expense-step-split').classList.remove('active');
-      calcTarget = 'total';
-      renderExpenseFlow();
+      animateExpenseSheet(() => {
+        document.getElementById('expense-step-amount').classList.add('active');
+        document.getElementById('expense-step-split').classList.remove('active');
+        calcTarget = 'total';
+        renderExpenseFlow();
+      });
     }
 
     function goExpenseStep2() {
       if (!canGoStep2()) return;
-      document.getElementById('expense-step-amount').classList.remove('active');
-      document.getElementById('expense-step-split').classList.add('active');
-      if (expenseDraft.splitMode === 'custom' && !expenseDraft.activeShareUid) {
-        expenseDraft.activeShareUid = expenseDraft.splitWith[0] || '';
-      }
-      calcTarget = expenseDraft.activeShareUid || 'share';
-      renderExpenseFlow();
+      animateExpenseSheet(() => {
+        document.getElementById('expense-step-amount').classList.remove('active');
+        document.getElementById('expense-step-split').classList.add('active');
+        if (expenseDraft.splitMode === 'custom' && !expenseDraft.activeShareUid) {
+          expenseDraft.activeShareUid = expenseDraft.splitWith[0] || '';
+        }
+        calcTarget = expenseDraft.activeShareUid || 'share';
+        renderExpenseFlow();
+      });
     }
 
     function formatCalcNumber(value) {
@@ -1632,9 +1666,11 @@
 
     function setSplitMode(mode) {
       if (!expenseDraft) return;
-      expenseDraft.splitMode = mode;
-      if (mode === 'custom') normalizeShares();
-      renderExpenseFlow();
+      animateExpenseSheet(() => {
+        expenseDraft.splitMode = mode;
+        if (mode === 'custom') normalizeShares();
+        renderExpenseFlow();
+      });
     }
 
     function setActiveShare(uid) {
