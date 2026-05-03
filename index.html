@@ -620,18 +620,18 @@
       align-items: center;
     }
     .share-calc-control {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr) 48px;
       gap: 8px;
       margin-top: 2px;
     }
     .share-calc-control .calc-display {
-      min-height: 74px;
+      min-height: 66px;
       align-items: center;
       font-size: clamp(30px, 8vw, 42px);
     }
     .share-calc-control .calc-back {
-      min-height: 44px;
-      width: 100%;
+      min-height: 66px;
+      width: auto;
       border-radius: var(--radius);
       box-shadow: none;
       background: #CFCFCA;
