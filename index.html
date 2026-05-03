@@ -619,6 +619,23 @@
       gap: 8px;
       align-items: center;
     }
+    .share-calc-control {
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .share-calc-control .calc-display {
+      min-height: 74px;
+      align-items: center;
+      font-size: clamp(30px, 8vw, 42px);
+    }
+    .share-calc-control .calc-back {
+      min-height: 44px;
+      width: 100%;
+      border-radius: var(--radius);
+      box-shadow: none;
+      background: #CFCFCA;
+    }
     .calc-display {
       min-height: 68px;
       padding: 12px 14px;
@@ -744,8 +761,8 @@
       display: grid;
       grid-template-columns: 1fr auto;
       align-items: center;
-      gap: 10px;
-      padding: 10px;
+      gap: 12px;
+      padding: 12px;
       border: 0;
       border-radius: var(--radius);
       background: #DCDCD8;
@@ -754,7 +771,7 @@
       border: 0;
       border-radius: var(--radius);
       background: #F4F4F2;
-      min-width: 104px;
+      min-width: 118px;
       min-height: 40px;
       font-weight: 500;
       color: var(--ink);
@@ -776,7 +793,7 @@
       max-height: 980px;
       opacity: 1;
       transform: translateY(0);
-      padding: 10px;
+      padding: 12px;
     }
     .flow-actions {
       position: sticky;
@@ -962,7 +979,7 @@
         <div id="custom-split-panel" class="split-panel">
           <p class="flow-note" id="custom-remaining">剩餘 0</p>
           <div class="check-grid" id="share-list"></div>
-          <div class="calc-control">
+          <div class="calc-control share-calc-control">
             <div class="calc-display" id="share-calc-display">0</div>
             <button type="button" class="calc-back" onclick="pressCalc('share', '⌫')" aria-label="刪除">⌫</button>
           </div>
