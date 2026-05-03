@@ -538,6 +538,11 @@
     }
     .modal.active .sheet { transform: translateY(0); }
     .sheet.height-animating { overflow: hidden; }
+    .sheet.content-hold .expense-step.active {
+      opacity: 0;
+      transform: translateY(8px) scale(.992);
+      transition: none;
+    }
     .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
     .sheet-head h2 { margin: 0; font-size: 20px; }
 
@@ -1535,6 +1540,7 @@
       const startHeight = sheet.getBoundingClientRect().height;
       sheet.style.height = `${startHeight}px`;
       sheet.classList.add('height-animating');
+      sheet.classList.add('content-hold');
 
       updateFn();
 
@@ -1549,6 +1555,9 @@
           cleaned = true;
           sheet.style.height = '';
           sheet.classList.remove('height-animating');
+          requestAnimationFrame(() => {
+            sheet.classList.remove('content-hold');
+          });
           sheet.removeEventListener('transitionend', cleanup);
         };
         sheet.addEventListener('transitionend', cleanup);
