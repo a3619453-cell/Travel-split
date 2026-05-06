@@ -578,6 +578,7 @@
       height: calc(100dvh - 28px);
       max-height: 860px;
       min-height: 0;
+      position: relative;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -630,6 +631,7 @@
     }
     .split-step.active {
       justify-content: flex-start;
+      padding-bottom: calc(92px + env(safe-area-inset-bottom));
     }
     .split-step.active > * {
       flex: 0 0 auto;
@@ -834,6 +836,55 @@
       background: #EDEDEA;
       z-index: 2;
     }
+    .flow-actions.floating-actions {
+      position: absolute;
+      right: 18px;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      display: flex;
+      grid-template-columns: none;
+      flex-direction: row-reverse;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      z-index: 8;
+    }
+    .floating-action-btn {
+      width: 56px;
+      height: 56px;
+      min-height: 56px;
+      border: 0;
+      border-radius: 50%;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink);
+      background: #DCDCD8;
+      box-shadow: 0 12px 26px rgba(17, 17, 17, .14);
+      cursor: pointer;
+      transition: transform .28s var(--spring), opacity .2s ease, background .2s ease;
+    }
+    .floating-action-btn svg {
+      width: 23px;
+      height: 23px;
+      stroke-width: 2.2px;
+    }
+    .floating-action-btn.primary {
+      color: #fff;
+      background: #111;
+    }
+    .floating-action-btn.secondary {
+      background: #DCDCD8;
+    }
+    .floating-action-btn:active:not([disabled]) {
+      transform: scale(.94);
+    }
+    .floating-action-btn[disabled] {
+      opacity: .36;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
     .flow-note {
       margin: -4px 2px 0;
       color: var(--muted);
@@ -1013,9 +1064,18 @@
           </div>
           <div class="calc-grid" id="share-calc"></div>
         </div>
-        <div class="flow-actions">
-          <button id="btn-save-expense" class="btn" onclick="saveExpense()" disabled>完成</button>
-          <button class="btn secondary" onclick="goExpenseStep1()">上一步</button>
+        <div class="flow-actions floating-actions">
+          <button id="btn-save-expense" class="floating-action-btn primary" onclick="saveExpense()" disabled title="完成" aria-label="完成">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"></path>
+            </svg>
+          </button>
+          <button class="floating-action-btn secondary" onclick="goExpenseStep1()" title="上一步" aria-label="上一步">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19 3.5 12l7-7"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 12h16"></path>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
