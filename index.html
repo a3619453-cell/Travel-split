@@ -837,9 +837,9 @@
       z-index: 2;
     }
     .flow-actions.floating-actions {
-      position: absolute;
-      right: 18px;
-      bottom: calc(18px + env(safe-area-inset-bottom));
+      position: fixed;
+      right: max(32px, calc((100vw - 520px) / 2 + 32px));
+      bottom: calc(32px + env(safe-area-inset-bottom));
       display: flex;
       grid-template-columns: none;
       flex-direction: row-reverse;
